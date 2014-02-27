@@ -9,16 +9,20 @@ import (
 	"github.com/controlgroup/gaws"
 )
 
+// Record is a Kinesis record. These are put onto Streams.
 type Record struct {
 	StreamName   string
 	Data         string
 	PartitionKey string
 }
 
+// Stream is a Kinesis stream
 type Stream struct {
 	Name string
 }
 
+// PutRecord puts data on a Kinesis stream.
+// See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecord.html for more details.
 func (s *Stream) PutRecord(partitionKey string, data []byte) error {
 	url := "https://kinesis.us-east-1.amazonaws.com"
 
