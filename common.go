@@ -35,7 +35,7 @@ func SendAWSRequest(req *http.Request) (*http.Response, error) {
 	for try := 1; try < MaxTries; try++ {
 
 		resp, err := client.Do(req)
-		defer resp.Body.Close()
+
 		if err != nil {
 			return resp, err
 		}
@@ -44,6 +44,7 @@ func SendAWSRequest(req *http.Request) (*http.Response, error) {
 			// The request succeeded
 			return resp, nil
 		} else {
+			defer resp.Body.Close()
 			// The request failed, but why?
 			error := AWSError{}
 

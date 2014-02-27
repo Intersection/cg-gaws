@@ -32,7 +32,7 @@ func (s *Stream) PutRecord(partitionKey string, data []byte) error {
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.PutRecord")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	_, err = gaws.SendAWSRequest(req)
-
+	resp, err := gaws.SendAWSRequest(req)
+	defer resp.Body.Close()
 	return err
 }
