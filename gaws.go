@@ -49,6 +49,8 @@ type AWSError struct {
 	Message string `json:"message"`
 }
 
+var exceededRetriesError = AWSError{Type: "GawsExceededMaxRetries", Message: "The maximum number of retries for this request was exceeded."}
+
 // Error formats the AWSError into an error message.
 func (e AWSError) Error() string {
 	return fmt.Sprintf("%v: %v", e.Type, e.Message)
@@ -60,6 +62,7 @@ func SendAWSRequest(req *http.Request) (*http.Response, error) {
 
 	awsauth.Sign(req)
 	client := &http.Client{}
+	var lastResp **http.Response
 
 	for try := 1; try < MaxTries; try++ {
 
@@ -91,10 +94,13 @@ func SendAWSRequest(req *http.Request) (*http.Response, error) {
 				return resp, error
 			}
 
+			// Point lastrep to resp
+			lastResp = &resp
+
 			// Exponential backoff for the retry
 			sleepDuration := time.Duration(100 * math.Pow(2.0, float64(try)))
 			time.Sleep(sleepDuration * time.Millisecond)
 		}
 	}
-	return &http.Response{}, AWSError{Type: "GawsExceededMaxRetries", Message: "The maximum number of retries for this request was exceeded."}
+	return *lastResp, exceededRetriesError
 }
