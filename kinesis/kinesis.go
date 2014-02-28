@@ -18,13 +18,33 @@ type Record struct {
 
 // Stream is a Kinesis stream
 type Stream struct {
-	Name string
+	Name   string // The name of the stream
+	Region string // The AWS region for this stream. Will use gaws.Region by default.
+}
+
+// getEndpoint returns the kinesis endpoint from the gaws.Regions map
+func (s *Stream) getEndpoint() (string, error) {
+	if s.Region == "" {
+		s.Region = gaws.Region
+	}
+
+	endpoint := gaws.Regions[s.Region].Endpoints.Kinesis
+
+	if endpoint == "" {
+		err := gaws.AWSError{Type: "GawsNoEndpointForRegion", Message: "There is no Kinesis endpoint in this region"}
+		return endpoint, err
+	}
+
+	return endpoint, nil
 }
 
 // PutRecord puts data on a Kinesis stream.
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecord.html for more details.
 func (s *Stream) PutRecord(partitionKey string, data []byte) error {
-	url := "https://kinesis.us-east-1.amazonaws.com"
+	url, err := s.getEndpoint()
+	if err != nil {
+		return err
+	}
 
 	encodedData := base64.StdEncoding.EncodeToString(data)
 
