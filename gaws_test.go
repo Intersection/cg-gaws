@@ -109,3 +109,29 @@ func TestThrottleRetry(t *testing.T) {
 
 	})
 }
+
+func TestServiceFinder(t *testing.T) {
+	Convey("Given a ServiceForRegion call with a valid region and service name", t, func() {
+		service, err := ServiceForRegion("us-east-1", "kinesis")
+		Convey("It will not return an error", func() {
+			So(err, ShouldBeNil)
+		})
+
+		Convey("It will return the expected service", func() {
+			expectedService := AWSService{Endpoint: "https://kinesis.us-east-1.amazonaws.com"}
+			So(service, ShouldResemble, expectedService)
+		})
+	})
+	Convey("Given a ServiceForRegion call with a valid region but invalid service name", t, func() {
+		_, err := ServiceForRegion("us-east-1", "blahblah")
+		Convey("It will return an error", func() {
+			So(err, ShouldNotBeNil)
+		})
+	})
+	Convey("Given a ServiceForRegion call with an invalid region and valid service name", t, func() {
+		_, err := ServiceForRegion("blahblah", "kinesis")
+		Convey("It will return an error", func() {
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
