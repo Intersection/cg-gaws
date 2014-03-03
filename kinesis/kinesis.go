@@ -57,6 +57,8 @@ func (s *Stream) PutRecord(partitionKey string, data []byte) error {
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
 	resp, err := gaws.SendAWSRequest(req)
-	defer resp.Body.Close()
+	if err == nil {
+		defer resp.Body.Close()
+	}
 	return err
 }
