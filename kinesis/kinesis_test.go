@@ -10,7 +10,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-
 func testHTTP200(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
@@ -26,7 +25,7 @@ func TestPutRecord(t *testing.T) {
 		key := "foo"
 
 		ep := testStream.Service.Endpoint
-		
+
 		So(ep, ShouldEqual, ts.URL)
 
 		Convey("Putting a record on that stream succeeds", func() {
@@ -81,12 +80,38 @@ func TestCreateStream(t *testing.T) {
 	})
 }
 
+var aListStreamsResult = listStreamsResult{HasMoreStreams: false, StreamNames: []string{"foo", "bar", "baz"}}
+
+func testListStreamsSuccess(w http.ResponseWriter, r *http.Request) {
+	b, _ := json.Marshal(aListStreamsResult)
+
+	w.WriteHeader(200)
+	w.Write([]byte(b))
+}
+
 func TestListStreams(t *testing.T) {
 	Convey("Given a ListStreams request to a server that returns streams", t, func() {
-		Convey("It should return a list of streams", nil)
-		Convey("It should not return an error", nil)
+		ts := httptest.NewServer(http.HandlerFunc(testListStreamsSuccess))
+		ks := KinesisService{Endpoint: ts.URL}
+		result, err := ks.ListStreams()
+
+		Convey("It should return a list of streams", func() {
+			So(result, ShouldHaveSameTypeAs, []Stream{})
+			Convey("And it should have 3 streams in it.", func() {
+				So(len(result), ShouldEqual, 3)
+			})
+		})
+
+		Convey("It should not return an error", func() {
+			So(err, ShouldBeNil)
+		})
 	})
 	Convey("Given a ListStreams request to a server that returns an error", t, func() {
-		Convey("It should return an error", nil)
+		ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
+		ks := KinesisService{Endpoint: ts.URL}
+		_, err := ks.ListStreams()
+		Convey("It should return an error", func() {
+			So(err, ShouldNotBeNil)
+		})
 	})
 }
