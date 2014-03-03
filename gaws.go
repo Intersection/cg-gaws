@@ -12,35 +12,6 @@ import (
 	"github.com/smartystreets/go-aws-auth"
 )
 
-// AWSRegion is an AWS region.
-type AWSRegion struct {
-	Name      string    // The AWS name for the region.
-	Endpoints Endpoints // The service endpoints for that region.
-}
-
-// Endpoints is a struct of the endpoints for a region
-type Endpoints struct {
-	Kinesis  string
-	DynamoDB string
-}
-
-// USEast1 is the AWS region in Northern Virginia
-var USEast1 AWSRegion = AWSRegion{
-	Name: "us-east-1",
-	Endpoints: Endpoints{
-		Kinesis:  "https://kinesis.us-east-1.amazonaws.com",
-		DynamoDB: "https://dynamodb.us-east-1.amazonaws.com",
-	},
-}
-
-// Regions is a map of AWS region names to gaws AWSRegions.
-var Regions = map[string]AWSRegion{
-	USEast1.Name: USEast1,
-}
-
-// Region is the name of the default region for gaws to use.
-var Region string = "us-east-1"
-
 // MaxTries is the number of times to retry a failing AWS request.
 var MaxTries int = 5
 
