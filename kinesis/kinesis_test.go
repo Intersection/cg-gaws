@@ -1,7 +1,6 @@
 package kinesis
 
 import (
-	// "encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,7 +26,7 @@ func TestGetEndpoint(t *testing.T) {
 			So(endpoint, ShouldEqual, "")
 			So(err, ShouldNotBeNil)
 		})
-		
+
 		Convey("getEndpoint returns the default endpoint for a stream without a region", func() {
 			s := Stream{Name: "foo"}
 			endpoint, err := s.getEndpoint()
