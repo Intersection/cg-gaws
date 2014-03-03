@@ -1,3 +1,4 @@
+// Package kinesis provides a way to interact with the AWS Kinesis service.
 package kinesis
 
 import (

@@ -1,3 +1,4 @@
+// Package gaws provides functions and variables that allow subpackages to work with AWS services.
 package gaws
 
 import (
