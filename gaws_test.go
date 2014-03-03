@@ -37,14 +37,10 @@ func TestSuccess(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", ts.URL, nil)
 
-		resp, err := SendAWSRequest(req)
+		_, err := SendAWSRequest(req)
 
 		Convey("There should be no errors", func() {
 			So(err, ShouldBeNil)
-		})
-
-		Convey("The status code should be 200", func() {
-			So(resp.StatusCode, ShouldEqual, 200)
 		})
 
 	})
@@ -58,7 +54,7 @@ func TestFailNoRetry(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", ts.URL, nil)
 
-		resp, err := SendAWSRequest(req)
+		_, err := SendAWSRequest(req)
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
@@ -68,9 +64,6 @@ func TestFailNoRetry(t *testing.T) {
 			So(err.Error(), ShouldEqual, notFoundError.Error())
 		})
 
-		Convey("The response status code should be 404", func() {
-			So(resp.StatusCode, ShouldEqual, 404)
-		})
 	})
 }
 
@@ -82,7 +75,7 @@ func TestThrottleRetry(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", ts.URL, nil)
 
-		resp, err := SendAWSRequest(req)
+		_, err := SendAWSRequest(req)
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
@@ -92,8 +85,5 @@ func TestThrottleRetry(t *testing.T) {
 			So(err.Error(), ShouldEqual, exceededRetriesError.Error())
 		})
 
-		Convey("The response status code should be 400", func() {
-			So(resp.StatusCode, ShouldEqual, 400)
-		})
 	})
 }

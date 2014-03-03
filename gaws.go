@@ -1,9 +1,9 @@
 package gaws
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"time"
@@ -58,49 +58,53 @@ func (e AWSError) Error() string {
 
 // SendAWSRequest signs and sends an AWS request.
 // It will retry 500s and throttling errors with an exponential backoff.
-func SendAWSRequest(req *http.Request) (*http.Response, error) {
+func SendAWSRequest(req *http.Request) ([]byte, error) {
 
 	awsauth.Sign(req)
 	client := &http.Client{}
-	var lastResp **http.Response
+	var lastBody []byte
 
 	for try := 1; try < MaxTries; try++ {
 
 		resp, err := client.Do(req)
+		defer resp.Body.Close()
 
 		if err != nil {
-			return resp, err
+			return make([]byte, 0), err
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+
+		if err != nil {
+			return body, err
 		}
 
 		if resp.StatusCode < 400 {
 			// The request succeeded
-			return resp, nil
+			return body, nil
 		} else {
-			defer resp.Body.Close()
+
 			// The request failed, but why?
 			error := AWSError{}
 
-			errorbuf := new(bytes.Buffer)
-			errorbuf.ReadFrom(resp.Body)
-
-			err = json.Unmarshal(errorbuf.Bytes(), &error)
+			err = json.Unmarshal(body, &error)
 			if err != nil {
-				return resp, err
+				return body, err
 			}
 
 			// If the error wasn't about throttling and it is below 500, lets return it
 			// This retries server errors or AWS errors where we should retry
 			if error.Type != "Throttling" && resp.StatusCode <= 500 {
-				return resp, error
+				return body, error
 			}
 
-			// Point lastrep to resp
-			lastResp = &resp
+			// Point lastBody to body
+			lastBody = body
 
 			// Exponential backoff for the retry
 			sleepDuration := time.Duration(100 * math.Pow(2.0, float64(try)))
 			time.Sleep(sleepDuration * time.Millisecond)
 		}
 	}
-	return *lastResp, exceededRetriesError
+	return lastBody, exceededRetriesError
 }
