@@ -23,6 +23,11 @@ func testHTTP404(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(b))
 }
 
+func testHTTP404NonJson(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(404)
+	w.Write([]byte("I am not JSON!"))
+}
+
 func testAWSThrottle(w http.ResponseWriter, r *http.Request) {
 	b, _ := json.Marshal(throttlingError)
 
@@ -31,7 +36,7 @@ func testAWSThrottle(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestSuccess(t *testing.T) {
-	Convey("A successful request works", t, func() {
+	Convey("Given a request sent to a server that always returns 200s", t, func() {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
 		defer ts.Close()
 
@@ -39,15 +44,32 @@ func TestSuccess(t *testing.T) {
 
 		_, err := SendAWSRequest(req)
 
-		Convey("There should be no errors", func() {
+		Convey("SendAWSRequest will not return errors", func() {
 			So(err, ShouldBeNil)
 		})
 
 	})
 }
 
+func TestFailBadJson(t *testing.T) {
+	Convey("Given a server that returns 404 errors without JSON", t, func() {
+
+		ts := httptest.NewServer(http.HandlerFunc(testHTTP404NonJson))
+		defer ts.Close()
+
+		req, _ := http.NewRequest("GET", ts.URL, nil)
+
+		_, err := SendAWSRequest(req)
+
+		Convey("SendAWSRequest should return an error", func() {
+			So(err, ShouldNotBeNil)
+		})
+
+	})
+}
+
 func TestFailNoRetry(t *testing.T) {
-	Convey("Requests that return 404 do not retry", t, func() {
+	Convey("Given a server that returns 404 errors with proper JSON", t, func() {
 
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
 		defer ts.Close()
@@ -60,7 +82,7 @@ func TestFailNoRetry(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("SendAWSRequest should return a not found error", func() {
+		Convey("SendAWSRequest should return a not found error (and not attempt to retry)", func() {
 			So(err.Error(), ShouldEqual, notFoundError.Error())
 		})
 
@@ -68,7 +90,7 @@ func TestFailNoRetry(t *testing.T) {
 }
 
 func TestThrottleRetry(t *testing.T) {
-	Convey("Requests that return a 400 throttle error retry", t, func() {
+	Convey("Given a server that only returns 400 errors with the Trottle type", t, func() {
 
 		ts := httptest.NewServer(http.HandlerFunc(testAWSThrottle))
 		defer ts.Close()
