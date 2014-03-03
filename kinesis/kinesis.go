@@ -23,6 +23,12 @@ type Stream struct {
 	Region string // The AWS region for this stream. Will use gaws.Region by default.
 }
 
+// createStreamRequest is the request to the CreateStream API call.
+type createStreamRequest struct {
+	ShardCount int
+	StreamName string
+}
+
 // getEndpoint returns the kinesis endpoint from the gaws.Regions map
 func (s *Stream) getEndpoint() (string, error) {
 	if s.Region == "" {
@@ -39,7 +45,7 @@ func (s *Stream) getEndpoint() (string, error) {
 	return endpoint, nil
 }
 
-// PutRecord puts data on a Kinesis stream.
+// PutRecord puts data on a Kinesis stream. It returns an error if it fails.
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecord.html for more details.
 func (s *Stream) PutRecord(partitionKey string, data []byte) error {
 	url, err := s.getEndpoint()
@@ -60,4 +66,34 @@ func (s *Stream) PutRecord(partitionKey string, data []byte) error {
 	_, err = gaws.SendAWSRequest(req)
 
 	return err
+}
+
+// CreateStream creates a new Kinesis stream. It returns a Stream and an error if it fails.
+// See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_CreateStream.html for more details.
+func CreateStream(name string, shardCount int) (Stream, error) {
+
+	stream := Stream{}
+
+	url, err := stream.getEndpoint()
+	if err != nil {
+		return stream, err
+	}
+
+	body := createStreamRequest{StreamName: name, ShardCount: shardCount}
+
+	bodyAsJson, err := json.Marshal(body)
+	payload := bytes.NewReader(bodyAsJson)
+
+	req, err := http.NewRequest("POST", url, payload)
+	req.Header.Set("X-Amz-Target", "Kinesis_20131202.CreateStream")
+	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+
+	_, err = gaws.SendAWSRequest(req)
+
+	if err == nil {
+		stream.Name = name
+		stream.Region = gaws.Region
+	}
+
+	return stream, err
 }

@@ -1,6 +1,7 @@
 package kinesis
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -62,6 +63,53 @@ func TestPutRecord(t *testing.T) {
 
 			So(err, ShouldBeNil)
 		})
-		// defer ts.Close()
+
+	})
+}
+
+var notFoundError = gaws.AWSError{Type: "NotFound", Message: "Could not find something"}
+
+func testHTTP404(w http.ResponseWriter, r *http.Request) {
+	b, _ := json.Marshal(notFoundError)
+
+	w.WriteHeader(404)
+	w.Write([]byte(b))
+}
+
+func TestCreateStream(t *testing.T) {
+	Convey("Given a name and a shard count", t, func() {
+		streamName := "foo"
+		shardCount := 5
+
+		Convey("When CreateStream is run against a server that always returns 200", func() {
+			ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
+
+			testRegion := gaws.AWSRegion{Name: "test-east-1", Endpoints: gaws.Endpoints{Kinesis: ts.URL}}
+			gaws.Regions[testRegion.Name] = testRegion
+			gaws.Region = testRegion.Name
+
+			result, err := CreateStream(streamName, shardCount)
+
+			Convey("It does not return an error", func() {
+				So(err, ShouldBeNil)
+			})
+			Convey("It returns  a Stream", func() {
+				So(result, ShouldHaveSameTypeAs, Stream{})
+			})
+		})
+		Convey("When CreateStream is run against a server that always returns 404", func() {
+			ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
+
+			testRegion := gaws.AWSRegion{Name: "test-east-1", Endpoints: gaws.Endpoints{Kinesis: ts.URL}}
+			gaws.Regions[testRegion.Name] = testRegion
+			gaws.Region = testRegion.Name
+
+			_, err := CreateStream(streamName, shardCount)
+
+			Convey("it returns an error", func() {
+
+				So(err, ShouldNotBeNil)
+			})
+		})
 	})
 }
