@@ -3,6 +3,7 @@ package gaws
 // Region is the name of the default region for gaws to use.
 var Region string = "us-east-1"
 
+// AWSService is a representation of an AWS Service.
 type AWSService struct {
 	Endpoint string
 }
@@ -18,6 +19,7 @@ var regionsToServices = map[string]map[string]AWSService{
 
 var noSuchServiceError = AWSError{Type: "GawsNoSuchService", Message: "Could not find this service."}
 
+// ServiceForRegion will return the AWSService for a given region and service name.
 func ServiceForRegion(region string, serviceName string) (AWSService, error) {
 	service := regionsToServices[region][serviceName]
 
