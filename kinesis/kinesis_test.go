@@ -255,23 +255,6 @@ func TestGetShardIterator(t *testing.T) {
 				So(result, ShouldEqual, "AAAAAAAAAAETYyAYzd665+8e0X7JTsASDM/Hr2rSwc0X2qz93iuA3udrjTH+ikQvpQk/1ZcMMLzRdAesqwBGPnsthzU0/CBlM/U8/8oEqGwX3pKw0XyeDNRAAZyXBo3MqkQtCpXhr942BRTjvWKhFz7OmCb2Ncfr8Tl2cBktooi6kJhr+djN5WYkB38Rr3akRgCl9qaU4dY=")
 			})
 		})
-		Convey("Using GetShardIterator with a ShardIteratorType", func() {
-			result, err := testShard.GetShardIterator("LATEST")
-			Convey("Does not return an error", func() {
-				So(err, ShouldBeNil)
-			})
 
-			Convey("Returns a shard iterator", func() {
-				So(result, ShouldEqual, "AAAAAAAAAAETYyAYzd665+8e0X7JTsASDM/Hr2rSwc0X2qz93iuA3udrjTH+ikQvpQk/1ZcMMLzRdAesqwBGPnsthzU0/CBlM/U8/8oEqGwX3pKw0XyeDNRAAZyXBo3MqkQtCpXhr942BRTjvWKhFz7OmCb2Ncfr8Tl2cBktooi6kJhr+djN5WYkB38Rr3akRgCl9qaU4dY=")
-			})
-		})
-	})
-	Convey("Given a Shard and a server that responds to GetShardIterator requests", t, func() {
-		Convey("Using GetShardIterator with a ShardIteratorType and StartingSequenceNumber", func() {
-			Convey("Returns an error", nil)
-		})
-		Convey("Using GetShardIterator with a ShardIteratorType", func() {
-			Convey("Returns an error", nil)
-		})
 	})
 }
