@@ -9,8 +9,8 @@ import (
 	"github.com/controlgroup/gaws"
 )
 
-// Record is a Kinesis record. These are put onto Streams.
-type Record struct {
+// putRecordRequest is a Kinesis record. These are put onto Streams.
+type putRecordRequest struct {
 	StreamName   string
 	Data         string
 	PartitionKey string

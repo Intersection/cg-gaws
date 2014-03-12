@@ -146,3 +146,56 @@ func TestDescribeStream(t *testing.T) {
 		})
 	})
 }
+
+var testGetRecordsResult []byte = []byte(`{
+  "NextShardIterator": "AAAAAAAAAAHsW8zCWf9164uy8Epue6WS3w6wmj4a4USt+CNvMd6uXQ+HL5vAJMznqqC0DLKsIjuoiTi1BpT6nW0LN2M2D56zM5H8anHm30Gbri9ua+qaGgj+3XTyvbhpERfrezgLHbPB/rIcVpykJbaSj5tmcXYRmFnqZBEyHwtZYFmh6hvWVFkIwLuMZLMrpWhG5r5hzkE=",
+  "Records": [
+    {
+      "Data": "XzxkYXRhPl8w",
+      "PartitionKey": "partitionKey",
+      "SequenceNumber": "21269319989652663814458848515492872193"
+    }
+  ] 
+}`)
+
+func testGetRecordsSuccess(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	w.Write(testGetRecordsResult)
+}
+
+func TestGetRecords(t *testing.T) {
+	request := GetRecordsRequest{ShardIterator: "foo"}
+	Convey("When calling GetRecords on a stream that returns records", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testGetRecordsSuccess))
+		ks := KinesisService{Endpoint: ts.URL}
+		testStream := Stream{Name: "foo", Service: &ks}
+		result, err := testStream.GetRecords(request)
+
+		Convey("It should not return an error", func() {
+			So(err, ShouldBeNil)
+		})
+
+		Convey("It should return records", func() {
+			So(result, ShouldHaveSameTypeAs, GetRecordsResponse{})
+			So(result.Records[0].Data, ShouldEqual, "XzxkYXRhPl8w")
+		})
+	})
+	Convey("When you call stream.Describe() on a stream with an endpoint that returns errors", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
+		ks := KinesisService{Endpoint: ts.URL}
+		testStream := Stream{Name: "foo", Service: &ks}
+		_, err := testStream.GetRecords(request)
+		Convey("The result will return an error", func() {
+			So(err, ShouldNotBeNil)
+		})
+	})
+	Convey("When calling GetRecords on a stream that returns an error", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
+		ks := KinesisService{Endpoint: ts.URL}
+		testStream := Stream{Name: "foo", Service: &ks}
+		_, err := testStream.GetRecords(request)
+		Convey("It should return an error", func() {
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
