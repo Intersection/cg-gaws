@@ -108,7 +108,7 @@ type Record struct {
 
 // GetRecordsResponse is returned by GetRecords.
 type GetRecordsResponse struct {
-	NextShardIterator string   // The next position in the shard from which to start sequentially reading data records. If set to null, the shard has been closed and the requested iterator will not return any more data.
+	NextShardIterator string   // The next position in the shard from which to start sequentially reading data records.
 	Records           []Record // A slice of Record structs
 }
 
