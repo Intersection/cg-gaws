@@ -145,3 +145,35 @@ func (s *Stream) GetRecords(request GetRecordsRequest) (GetRecordsResponse, erro
 	return result, err
 
 }
+
+type mergeShardsRequest struct {
+	AdjacentShardToMerge string
+	ShardToMerge         string
+	StreamName           string
+}
+
+// MergeShards merges shards in a stream
+// See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_MergeShards.html for more details.
+func (s *Stream) MergeShards(shardToMerge string, adjacentShardToMerge string) error {
+	url := s.Service.Endpoint
+
+	body := mergeShardsRequest{StreamName: s.Name, ShardToMerge: shardToMerge, AdjacentShardToMerge: adjacentShardToMerge}
+	bodyAsJson, err := json.Marshal(body)
+	payload := bytes.NewReader(bodyAsJson)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, payload)
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("X-Amz-Target", "Kinesis_20131202.MergeShards")
+	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+
+	_, err = gaws.SendAWSRequest(req)
+
+	return err
+}

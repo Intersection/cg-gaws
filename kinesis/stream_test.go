@@ -199,3 +199,26 @@ func TestGetRecords(t *testing.T) {
 		})
 	})
 }
+
+func TestMergeShards(t *testing.T) {
+	Convey("Given a Stream and a Server that responds with success to every request", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
+		ks := KinesisService{Endpoint: ts.URL}
+		testStream := Stream{Name: "foo", Service: &ks}
+
+		Convey("There is no error when I call Stream.MergeShards()", func() {
+			result := testStream.MergeShards("foo", "bar")
+			So(result, ShouldBeNil)
+		})
+	})
+	Convey("Given a Stream and a Server that responds with an error to every request", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
+		ks := KinesisService{Endpoint: ts.URL}
+		testStream := Stream{Name: "foo", Service: &ks}
+
+		Convey("There is an error when I call Stream.MergeShards()", func() {
+			result := testStream.MergeShards("foo", "bar")
+			So(result, ShouldNotBeNil)
+		})
+	})
+}
