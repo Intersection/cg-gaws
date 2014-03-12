@@ -177,3 +177,35 @@ func (s *Stream) MergeShards(shardToMerge string, adjacentShardToMerge string) e
 
 	return err
 }
+
+type splitShardRequest struct {
+	NewStartingHashKey string
+	ShardToSplit       string
+	StreamName         string
+}
+
+// SplitShards splits shards in a stream
+// See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_SplitShard.html for more details.
+func (s *Stream) SplitShard(shardToSplit string, newStartingHashKey string) error {
+	url := s.Service.Endpoint
+
+	body := splitShardRequest{StreamName: s.Name, ShardToSplit: shardToSplit, NewStartingHashKey: newStartingHashKey}
+	bodyAsJson, err := json.Marshal(body)
+	payload := bytes.NewReader(bodyAsJson)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, payload)
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("X-Amz-Target", "Kinesis_20131202.SplitShard")
+	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+
+	_, err = gaws.SendAWSRequest(req)
+
+	return err
+}
