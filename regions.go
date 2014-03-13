@@ -9,15 +9,24 @@ type AWSService struct {
 }
 
 var usEast1 = map[string]AWSService{
-	"kinesis":  AWSService{Endpoint: "https://kinesis.us-east-1.amazonaws.com"},
-	"dynamodb": AWSService{Endpoint: "https://dynamodb.us-east-1.amazonaws.com"},
+	"kinesis":  AWSService{
+		Endpoint: "https://kinesis.us-east-1.amazonaws.com",
+	},
+	"dynamodb": AWSService{
+		Endpoint: "https://dynamodb.us-east-1.amazonaws.com",
+	},
+	"cloudformation": AWSService{
+		Endpoint: "https://cloudformation.us-east-1.amazonaws.com",
+	},
 }
 
 var regionsToServices = map[string]map[string]AWSService{
 	"us-east-1": usEast1,
 }
 
-var noSuchServiceError = AWSError{Type: "GawsNoSuchService", Message: "Could not find this service."}
+var noSuchServiceError = AWSError{
+	Type: "GawsNoSuchService", Message: "Could not find this service.",
+}
 
 // ServiceForRegion will return the AWSService for a given region and service name.
 func ServiceForRegion(region string, serviceName string) (AWSService, error) {

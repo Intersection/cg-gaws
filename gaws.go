@@ -21,7 +21,10 @@ type AWSError struct {
 	Message string `json:"message"`
 }
 
-var exceededRetriesError = AWSError{Type: "GawsExceededMaxRetries", Message: "The maximum number of retries for this request was exceeded."}
+var exceededRetriesError = AWSError{
+	Type: "GawsExceededMaxRetries",
+	Message: "The maximum number of retries for this request was exceeded.",
+}
 
 // Error formats the AWSError into an error message.
 func (e AWSError) Error() string {
