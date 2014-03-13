@@ -110,12 +110,12 @@ func testGetRecordsSuccess(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestGetRecords(t *testing.T) {
-	request := GetRecordsRequest{ShardIterator: "foo"}
+
 	Convey("When calling GetRecords on a stream that returns records", t, func() {
 		ts := httptest.NewServer(http.HandlerFunc(testGetRecordsSuccess))
 		ks := KinesisService{Endpoint: ts.URL}
 
-		records, nextIterator, err := ks.GetRecords(request)
+		records, nextIterator, err := ks.GetRecords("foo", 0)
 
 		Convey("It should not return an error", func() {
 			So(err, ShouldBeNil)
@@ -130,7 +130,7 @@ func TestGetRecords(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
 		ks := KinesisService{Endpoint: ts.URL}
 
-		_, _, err := ks.GetRecords(request)
+		_, _, err := ks.GetRecords("foo", 0)
 		Convey("The result will return an error", func() {
 			So(err, ShouldNotBeNil)
 		})
@@ -139,7 +139,7 @@ func TestGetRecords(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
 		ks := KinesisService{Endpoint: ts.URL}
 
-		_, _, err := ks.GetRecords(request)
+		_, _, err := ks.GetRecords("foo", 0)
 		Convey("It should return an error", func() {
 			So(err, ShouldNotBeNil)
 		})

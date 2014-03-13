@@ -93,8 +93,8 @@ func (s *KinesisService) ListStreams() ([]Stream, error) {
 	return streams, nil
 }
 
-// GetRecordsRequest is used with GetRecords to request records from a stream. Limit is optional.
-type GetRecordsRequest struct {
+// getRecordsRequest is used with GetRecords to request records from a stream. Limit is optional.
+type getRecordsRequest struct {
 	Limit         int    `json:",omitempty"` // Optional number of records to return.
 	ShardIterator string // The shard iterator to use.
 }
@@ -112,9 +112,10 @@ type getRecordsResponse struct {
 	Records           []Record // A slice of Record structs
 }
 
-// GetRecords returns one or more data records from a stream.
+// GetRecords returns one or more data records from a stream. limit can be an integer up to 10,000. If it is 0, this will use the default limit.
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html for more details.
-func (s *KinesisService) GetRecords(request GetRecordsRequest) ([]Record, string, error) {
+func (s *KinesisService) GetRecords(shardIterator string, limit int) ([]Record, string, error) {
+	request := getRecordsRequest{ShardIterator: shardIterator, Limit: limit}
 	result := getRecordsResponse{}
 	url := s.Endpoint
 
