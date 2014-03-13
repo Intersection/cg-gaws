@@ -1,4 +1,3 @@
-// Package kinesis provides a way to interact with the AWS Kinesis service.
 package kinesis
 
 import (
@@ -106,22 +105,22 @@ type Record struct {
 	SequenceNumber string // The unique identifier for the record in the Amazon Kinesis stream.
 }
 
-// GetRecordsResponse is returned by GetRecords.
-type GetRecordsResponse struct {
+// getRecordsResponse is returned by GetRecords.
+type getRecordsResponse struct {
 	NextShardIterator string   // The next position in the shard from which to start sequentially reading data records.
 	Records           []Record // A slice of Record structs
 }
 
-// GetRecords returns one or more data records from a shard.
+// GetRecords returns one or more data records from a stream.
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html for more details.
-func (s *Stream) GetRecords(request GetRecordsRequest) (GetRecordsResponse, error) {
-	result := GetRecordsResponse{}
+func (s *Stream) GetRecords(request GetRecordsRequest) ([]Record, string, error) {
+	result := getRecordsResponse{}
 	url := s.Service.Endpoint
 
 	bodyAsJson, err := json.Marshal(request)
 
 	if err != nil {
-		return result, err
+		return []Record{}, "", err
 	}
 
 	payload := bytes.NewReader(bodyAsJson)
@@ -129,7 +128,7 @@ func (s *Stream) GetRecords(request GetRecordsRequest) (GetRecordsResponse, erro
 	req, err := http.NewRequest("POST", url, payload)
 
 	if err != nil {
-		return result, err
+		return []Record{}, "", err
 	}
 
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.GetRecords")
@@ -137,12 +136,12 @@ func (s *Stream) GetRecords(request GetRecordsRequest) (GetRecordsResponse, erro
 
 	resp, err := gaws.SendAWSRequest(req)
 	if err != nil {
-		return result, err
+		return []Record{}, "", err
 	}
 
 	err = json.Unmarshal(resp, &result)
 
-	return result, err
+	return result.Records, result.NextShardIterator, err
 
 }
 
