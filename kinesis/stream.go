@@ -43,12 +43,13 @@ func (s *Stream) Delete() error {
 	return err
 }
 
+// StreamDescription is the description of a kinesis stream
 type StreamDescription struct {
 	HasMoreShards bool
 	Shards        []Shard
 	StreamARN     string
 	StreamName    string
-	StreamStatus  string
+	StreamStatus  string // The status of the stream. May be CREATING, DELETING, ACTIVE, or UPDATING.
 }
 
 type streamDescriptionResult struct {
