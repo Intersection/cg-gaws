@@ -58,7 +58,7 @@ func (s *Shard) GetShardIterator(shardIteratorType string, startingSequenceNumbe
 		return "", err
 	}
 
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.DescribeStream")
+	req.Header.Set("X-Amz-Target", "Kinesis_20131202.GetShardIterator")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
 	resp, err := gaws.SendAWSRequest(req)
