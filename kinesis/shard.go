@@ -8,26 +8,20 @@ import (
 	"github.com/controlgroup/gaws"
 )
 
-// HashKeyRange is the range of hash keys for a shard. It is used in the Shard type.
-type HashKeyRange struct {
-	EndingHashKey   string
-	StartingHashKey string
-}
-
-// SequenceNumberRange is the range of sequence numbers used in a shard. It is used in the Shard type.
-type SequenceNumberRange struct {
-	EndingSequenceNumber   string
-	StartingSequenceNumber string
-}
-
 // Shard is a shard in a Kinesis stream.
 type Shard struct {
 	AdjacentParentShardId string
-	HashKeyRange          HashKeyRange
-	ParentShardId         string
-	SequenceNumberRange   SequenceNumberRange
-	ShardId               string
-	stream                *Stream
+	HashKeyRange          struct {
+		EndingHashKey   string
+		StartingHashKey string
+	}
+	ParentShardId       string
+	SequenceNumberRange struct {
+		EndingSequenceNumber   string
+		StartingSequenceNumber string
+	}
+	ShardId string
+	stream  *Stream
 }
 
 type getShardIteratorResponse struct {
