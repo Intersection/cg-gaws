@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	//"github.com/controlgroup/gaws"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
