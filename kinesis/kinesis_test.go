@@ -145,3 +145,23 @@ func TestGetRecords(t *testing.T) {
 		})
 	})
 }
+
+func TestStreamRecords(t *testing.T) {
+	Convey("When StreamRecords is used on a service that returns a record", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testGetRecordsSuccess))
+		ks := KinesisService{Endpoint: ts.URL}
+		c, _ := ks.StreamRecords("foo")
+		record := <-c
+		Convey("The record will be what we expect", func() {
+			So(record.Data, ShouldEqual, "XzxkYXRhPl8w")
+		})
+	})
+	Convey("When StreamRecords is used on a service that returns an error", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
+		ks := KinesisService{Endpoint: ts.URL}
+		_, e := ks.StreamRecords("foo")
+		Convey("The error will be returned on the error channel", func() {
+			So(e, ShouldNotBeNil)
+		})
+	})
+}

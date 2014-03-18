@@ -146,3 +146,26 @@ func (s *KinesisService) GetRecords(shardIterator string, limit int) ([]Record, 
 	return result.Records, result.NextShardIterator, err
 
 }
+
+// BUG(drocamor): StreamRecords is a terrible name.
+
+// StreamRecords creates a goroutine and uses GetRecords to send records over a channel. If it encounters an error, it will send the error over the error channel and exit the goroutine.
+func (s *KinesisService) StreamRecords(shardIterator string) (<-chan Record, <-chan error) {
+	c := make(chan Record)
+	errc := make(chan error)
+	go func() {
+		for {
+			records, newiterator, err := s.GetRecords(shardIterator, 0)
+
+			if err != nil {
+				errc <- err
+				break
+			}
+			shardIterator = newiterator
+			for _, r := range records {
+				c <- r
+			}
+		}
+	}()
+	return c, errc
+}
