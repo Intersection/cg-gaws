@@ -27,11 +27,11 @@ func (e gawsError) Error() string {
 	return fmt.Sprintf("%v: %v", e.Type, e.Message)
 }
 
-type RetryPredicate func(int, []byte) (bool, error)
+type retryPredicate func(int, []byte) (bool, error)
 
 // SendAWSRequest signs and sends an AWS request.
 // It will retry 500s and throttling errors with an exponential backoff.
-func SendAWSRequest(req *http.Request, retry RetryPredicate) ([]byte, error) {
+func SendAWSRequest(req *http.Request, retry retryPredicate) ([]byte, error) {
 
 	awsauth.Sign(req)
 	client := &http.Client{}

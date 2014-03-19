@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-
-	"github.com/controlgroup/gaws"
 )
 
 // Shard is a shard in a Kinesis stream.
@@ -55,7 +53,7 @@ func (s *Shard) GetShardIterator(shardIteratorType string, startingSequenceNumbe
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.GetShardIterator")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	resp, err := gaws.SendAWSRequest(req)
+	resp, err := sendKinesisRequest(req)
 	if err != nil {
 		return "", err
 	}

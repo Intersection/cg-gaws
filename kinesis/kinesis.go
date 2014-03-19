@@ -4,10 +4,60 @@ package kinesis
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/controlgroup/gaws"
 )
+
+// kinesisError is the error document returned from the Kinesis service.
+type kinesisError struct {
+	Type    string `json:"__type"`
+	Message string `json:"message"`
+}
+
+// Error formats the kinesisError into an error message.
+func (e kinesisError) Error() string {
+	return fmt.Sprintf("%v: %v", e.Type, e.Message)
+}
+
+func kinesisRetryPredicate(status int, body []byte) (bool, error) {
+	if status < 400 {
+		return false, nil
+	}
+
+	// The request failed, but why?
+	error := kinesisError{}
+
+	err := json.Unmarshal(body, &error)
+	if err != nil {
+		return false, err
+	}
+
+	// retry if it is an AWS error
+	if status >= 500 {
+		return true, error
+	}
+
+	if error.Type == "Throttling" {
+		return true, error
+	}
+
+	if error.Type == "ProvisionedThroughputExceededException" {
+		return true, error
+	}
+
+	return false, error
+}
+
+func sendKinesisRequest(req *http.Request) ([]byte, error) {
+
+	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+
+	result, err := gaws.SendAWSRequest(req, kinesisRetryPredicate)
+
+	return result, err
+}
 
 // putRecordRequest is a Kinesis record. These are put onto Streams.
 type putRecordRequest struct {
@@ -48,7 +98,7 @@ func (s *KinesisService) CreateStream(name string, shardCount int) (Stream, erro
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.CreateStream")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err = sendKinesisRequest(req)
 
 	return stream, err
 }
@@ -71,7 +121,7 @@ func (s *KinesisService) ListStreams() ([]Stream, error) {
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.ListStreams")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	body, err := gaws.SendAWSRequest(req)
+	body, err := sendKinesisRequest(req)
 
 	if err != nil {
 		return []Stream{}, err
@@ -136,7 +186,7 @@ func (s *KinesisService) GetRecords(shardIterator string, limit int) ([]Record, 
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.GetRecords")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	resp, err := gaws.SendAWSRequest(req)
+	resp, err := sendKinesisRequest(req)
 	if err != nil {
 		return []Record{}, "", err
 	}

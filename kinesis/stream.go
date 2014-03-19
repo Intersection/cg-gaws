@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
-
-	"github.com/controlgroup/gaws"
 )
 
 // PutRecord puts data on a Kinesis stream. It returns an error if it fails.
@@ -24,7 +22,7 @@ func (s *Stream) PutRecord(partitionKey string, data []byte) error {
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.PutRecord")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err = sendKinesisRequest(req)
 
 	return err
 }
@@ -38,7 +36,7 @@ func (s *Stream) Delete() error {
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.DeleteStream")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err = sendKinesisRequest(req)
 
 	return err
 }
@@ -81,7 +79,7 @@ func (s *Stream) Describe() (StreamDescription, error) {
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.DescribeStream")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	resp, err := gaws.SendAWSRequest(req)
+	resp, err := sendKinesisRequest(req)
 	if err != nil {
 		return StreamDescription{}, err
 	}
@@ -125,7 +123,7 @@ func (s *Stream) MergeShards(shardToMerge string, adjacentShardToMerge string) e
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.MergeShards")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err = sendKinesisRequest(req)
 
 	return err
 }
@@ -157,7 +155,7 @@ func (s *Stream) SplitShard(shardToSplit string, newStartingHashKey string) erro
 	req.Header.Set("X-Amz-Target", "Kinesis_20131202.SplitShard")
 	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err = sendKinesisRequest(req)
 
 	return err
 }
