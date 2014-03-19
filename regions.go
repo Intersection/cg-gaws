@@ -17,7 +17,7 @@ var regionsToServices = map[string]map[string]AWSService{
 	"us-east-1": usEast1,
 }
 
-var noSuchServiceError = AWSError{Type: "GawsNoSuchService", Message: "Could not find this service."}
+var noSuchServiceError = gawsError{Type: "GawsNoSuchService", Message: "Could not find this service."}
 
 // ServiceForRegion will return the AWSService for a given region and service name.
 func ServiceForRegion(region string, serviceName string) (AWSService, error) {

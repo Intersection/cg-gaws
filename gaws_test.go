@@ -9,8 +9,30 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var notFoundError = AWSError{Type: "NotFound", Message: "Could not find something"}
-var throttlingError = AWSError{Type: "Throttling", Message: "You have been throttled"}
+var notFoundError = gawsError{Type: "NotFound", Message: "Could not find something"}
+var throttlingError = gawsError{Type: "Throttling", Message: "You have been throttled"}
+
+func defaultRetryPredicate(status int, body []byte) (bool, error) {
+	if status < 400 {
+		return false, nil
+	}
+
+	// The request failed, but why?
+	error := gawsError{}
+
+	err := json.Unmarshal(body, &error)
+	if err != nil {
+		return false, err
+	}
+
+	// If the error wasn't about throttling and it is below 500, lets return it
+	// This retries server errors or AWS errors where we should retry
+	if error.Type != "Throttling" && status <= 500 {
+		return false, error
+	}
+
+	return true, error
+}
 
 func testHTTP200(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
@@ -42,7 +64,7 @@ func TestSuccess(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", ts.URL, nil)
 
-		_, err := SendAWSRequest(req)
+		_, err := SendAWSRequest(req, defaultRetryPredicate)
 
 		Convey("SendAWSRequest will not return errors", func() {
 			So(err, ShouldBeNil)
@@ -59,7 +81,7 @@ func TestFailBadJson(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", ts.URL, nil)
 
-		_, err := SendAWSRequest(req)
+		_, err := SendAWSRequest(req, defaultRetryPredicate)
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
@@ -76,7 +98,7 @@ func TestFailNoRetry(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", ts.URL, nil)
 
-		_, err := SendAWSRequest(req)
+		_, err := SendAWSRequest(req, defaultRetryPredicate)
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
@@ -97,7 +119,7 @@ func TestThrottleRetry(t *testing.T) {
 
 		req, _ := http.NewRequest("GET", ts.URL, nil)
 
-		_, err := SendAWSRequest(req)
+		_, err := SendAWSRequest(req, defaultRetryPredicate)
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
