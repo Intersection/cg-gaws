@@ -67,8 +67,10 @@ type putRecordRequest struct {
 	PartitionKey string
 }
 
-// KinesisService is the an alias for gaws.AWSService.
-type KinesisService gaws.AWSService
+// KinesisService is the Kinesis service at AWS.
+type KinesisService struct {
+	Endpoint string
+}
 
 // Stream is a Kinesis stream
 type Stream struct {
