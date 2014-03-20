@@ -2,12 +2,63 @@
 package kinesis
 
 import (
-	"bytes"
 	"encoding/json"
-	"net/http"
+	"fmt"
 
 	"github.com/controlgroup/gaws"
 )
+
+// kinesisError is the error document returned from the Kinesis service.
+type kinesisError struct {
+	Type    string `json:"__type"`
+	Message string `json:"message"`
+}
+
+// Error formats the kinesisError into an error message.
+func (e kinesisError) Error() string {
+	return fmt.Sprintf("%v: %v", e.Type, e.Message)
+}
+
+func kinesisRetryPredicate(status int, body []byte) (bool, error) {
+	if status < 400 {
+		return false, nil
+	}
+
+	// The request failed, but why?
+	error := kinesisError{}
+
+	err := json.Unmarshal(body, &error)
+	if err != nil {
+		return false, err
+	}
+
+	// retry if it is an AWS error
+	if status >= 500 {
+		return true, error
+	}
+
+	if error.Type == "Throttling" {
+		return true, error
+	}
+
+	if error.Type == "ProvisionedThroughputExceededException" {
+		return true, error
+	}
+
+	return false, error
+}
+
+func (s *KinesisService) request() gaws.AWSRequest {
+	r := gaws.AWSRequest{
+		RetryPredicate: kinesisRetryPredicate,
+		Method:         "POST",
+		URL:            s.Endpoint,
+		Headers: map[string]string{
+			"Content-Type": "application/x-amz-json-1.1",
+		},
+	}
+	return r
+}
 
 // putRecordRequest is a Kinesis record. These are put onto Streams.
 type putRecordRequest struct {
@@ -16,8 +67,10 @@ type putRecordRequest struct {
 	PartitionKey string
 }
 
-// KinesisService is the an alias for gaws.AWSService.
-type KinesisService gaws.AWSService
+// KinesisService is the Kinesis service at AWS.
+type KinesisService struct {
+	Endpoint string
+}
 
 // Stream is a Kinesis stream
 type Stream struct {
@@ -37,18 +90,14 @@ func (s *KinesisService) CreateStream(name string, shardCount int) (Stream, erro
 
 	stream := Stream{Name: name, Service: s}
 
-	url := stream.Service.Endpoint
-
 	body := createStreamRequest{StreamName: name, ShardCount: shardCount}
-
 	bodyAsJson, err := json.Marshal(body)
-	payload := bytes.NewReader(bodyAsJson)
 
-	req, err := http.NewRequest("POST", url, payload)
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.CreateStream")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+	req := s.request()
+	req.Body = bodyAsJson
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.CreateStream"
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err = req.Do()
 
 	return stream, err
 }
@@ -65,13 +114,10 @@ type listStreamsResult struct {
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_ListStreams.html for more details
 func (s *KinesisService) ListStreams() ([]Stream, error) {
 
-	url := s.Endpoint
+	req := s.request()
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.ListStreams"
 
-	req, err := http.NewRequest("POST", url, nil)
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.ListStreams")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
-
-	body, err := gaws.SendAWSRequest(req)
+	body, err := req.Do()
 
 	if err != nil {
 		return []Stream{}, err
@@ -117,26 +163,15 @@ type getRecordsResponse struct {
 func (s *KinesisService) GetRecords(shardIterator string, limit int) ([]Record, string, error) {
 	request := getRecordsRequest{ShardIterator: shardIterator, Limit: limit}
 	result := getRecordsResponse{}
-	url := s.Endpoint
+
+	req := s.request()
 
 	bodyAsJson, err := json.Marshal(request)
 
-	if err != nil {
-		return []Record{}, "", err
-	}
+	req.Body = bodyAsJson
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.GetRecords"
 
-	payload := bytes.NewReader(bodyAsJson)
-
-	req, err := http.NewRequest("POST", url, payload)
-
-	if err != nil {
-		return []Record{}, "", err
-	}
-
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.GetRecords")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
-
-	resp, err := gaws.SendAWSRequest(req)
+	resp, err := req.Do()
 	if err != nil {
 		return []Record{}, "", err
 	}

@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/controlgroup/gaws"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -14,7 +13,7 @@ func testHTTP200(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-var notFoundError = gaws.AWSError{Type: "NotFound", Message: "Could not find something"}
+var notFoundError = kinesisError{Type: "NotFound", Message: "Could not find something"}
 
 func testHTTP404(w http.ResponseWriter, r *http.Request) {
 	b, _ := json.Marshal(notFoundError)

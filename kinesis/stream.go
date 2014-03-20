@@ -1,30 +1,24 @@
 package kinesis
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"net/http"
-
-	"github.com/controlgroup/gaws"
 )
 
 // PutRecord puts data on a Kinesis stream. It returns an error if it fails.
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_PutRecord.html for more details.
 func (s *Stream) PutRecord(partitionKey string, data []byte) error {
-	url := s.Service.Endpoint
 
 	encodedData := base64.StdEncoding.EncodeToString(data)
 
 	body := putRecordRequest{StreamName: s.Name, Data: encodedData, PartitionKey: partitionKey}
 	bodyAsJson, err := json.Marshal(body)
-	payload := bytes.NewReader(bodyAsJson)
 
-	req, err := http.NewRequest("POST", url, payload)
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.PutRecord")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+	req := s.Service.request()
+	req.Body = bodyAsJson
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.PutRecord"
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err = req.Do()
 
 	return err
 }
@@ -32,13 +26,11 @@ func (s *Stream) PutRecord(partitionKey string, data []byte) error {
 // Delete deletes a stream. It is calling the DeleteStream API call.
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_DeleteStream.html for more details.
 func (s *Stream) Delete() error {
-	url := s.Service.Endpoint
+	req := s.Service.request()
 
-	req, err := http.NewRequest("POST", url, nil)
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.DeleteStream")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.DeleteStream"
 
-	_, err = gaws.SendAWSRequest(req)
+	_, err := req.Do()
 
 	return err
 }
@@ -66,22 +58,15 @@ type streamDescriptionRequest struct {
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_DescribeStream.html for more details.
 func (s *Stream) Describe() (StreamDescription, error) {
 	result := streamDescriptionResult{}
-	url := s.Service.Endpoint
 
 	body := streamDescriptionRequest{StreamName: s.Name}
 	bodyAsJson, err := json.Marshal(body)
-	payload := bytes.NewReader(bodyAsJson)
 
-	req, err := http.NewRequest("POST", url, payload)
+	req := s.Service.request()
+	req.Body = bodyAsJson
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.DescribeStream"
 
-	if err != nil {
-		return StreamDescription{}, err
-	}
-
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.DescribeStream")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
-
-	resp, err := gaws.SendAWSRequest(req)
+	resp, err := req.Do()
 	if err != nil {
 		return StreamDescription{}, err
 	}
@@ -107,25 +92,15 @@ type mergeShardsRequest struct {
 // MergeShards merges shards in a stream
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_MergeShards.html for more details.
 func (s *Stream) MergeShards(shardToMerge string, adjacentShardToMerge string) error {
-	url := s.Service.Endpoint
 
 	body := mergeShardsRequest{StreamName: s.Name, ShardToMerge: shardToMerge, AdjacentShardToMerge: adjacentShardToMerge}
 	bodyAsJson, err := json.Marshal(body)
-	payload := bytes.NewReader(bodyAsJson)
-	if err != nil {
-		return err
-	}
 
-	req, err := http.NewRequest("POST", url, payload)
+	req := s.Service.request()
+	req.Body = bodyAsJson
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.MergeShards"
 
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.MergeShards")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
-
-	_, err = gaws.SendAWSRequest(req)
+	_, err = req.Do()
 
 	return err
 }
@@ -139,25 +114,14 @@ type splitShardRequest struct {
 // SplitShards splits shards in a stream
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_SplitShard.html for more details.
 func (s *Stream) SplitShard(shardToSplit string, newStartingHashKey string) error {
-	url := s.Service.Endpoint
 
 	body := splitShardRequest{StreamName: s.Name, ShardToSplit: shardToSplit, NewStartingHashKey: newStartingHashKey}
 	bodyAsJson, err := json.Marshal(body)
-	payload := bytes.NewReader(bodyAsJson)
-	if err != nil {
-		return err
-	}
 
-	req, err := http.NewRequest("POST", url, payload)
+	req := s.Service.request()
+	req.Body = bodyAsJson
+	req.Headers["X-Amz-Target"] = "Kinesis_20131202.SplitShard"
 
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("X-Amz-Target", "Kinesis_20131202.SplitShard")
-	req.Header.Set("Content-Type", "application/x-amz-json-1.1")
-
-	_, err = gaws.SendAWSRequest(req)
-
+	_, err = req.Do()
 	return err
 }

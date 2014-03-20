@@ -2,7 +2,7 @@
 package gaws
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -15,67 +15,71 @@ import (
 // MaxTries is the number of times to retry a failing AWS request.
 var MaxTries int = 5
 
-// AWSError is the error document returned from many AWS requests.
-type AWSError struct {
+// gawsError is the error document returned from many AWS requests.
+type gawsError struct {
 	Type    string `json:"__type"`
 	Message string `json:"message"`
 }
 
-var exceededRetriesError = AWSError{Type: "GawsExceededMaxRetries", Message: "The maximum number of retries for this request was exceeded."}
+var exceededRetriesError = gawsError{Type: "GawsExceededMaxRetries", Message: "The maximum number of retries for this request was exceeded."}
 
-// Error formats the AWSError into an error message.
-func (e AWSError) Error() string {
+// Error formats the gawsError into an error message.
+func (e gawsError) Error() string {
 	return fmt.Sprintf("%v: %v", e.Type, e.Message)
 }
 
-// SendAWSRequest signs and sends an AWS request.
-// It will retry 500s and throttling errors with an exponential backoff.
-func SendAWSRequest(req *http.Request) ([]byte, error) {
+type retryPredicate func(int, []byte) (bool, error)
+
+// AWSRequest is a request to AWS. It is used instead of http.Request to facilitate retries.
+type AWSRequest struct {
+	RetryPredicate retryPredicate
+	URL            string
+	Method         string
+	Headers        map[string]string
+	Body           []byte
+}
+
+func (r *AWSRequest) getRequest() *http.Request {
+
+	payload := bytes.NewReader(r.Body)
+	req, _ := http.NewRequest(r.Method, r.URL, payload)
+
+	for k, v := range r.Headers {
+		req.Header.Set(k, v)
+	}
 
 	awsauth.Sign(req)
+	return req
+}
+
+// Do makes the request to AWS and retries with an exponential backoff.
+func (r *AWSRequest) Do() ([]byte, error) {
 	client := &http.Client{}
 	var lastBody []byte
 
 	for try := 1; try < MaxTries; try++ {
-
+		req := r.getRequest()
 		resp, err := client.Do(req)
-		defer resp.Body.Close()
 
 		if err != nil {
 			return make([]byte, 0), err
 		}
-
+		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 
 		if err != nil {
 			return body, err
 		}
 
-		if resp.StatusCode < 400 {
-			// The request succeeded
-			return body, nil
-		} else {
-
-			// The request failed, but why?
-			error := AWSError{}
-
-			err = json.Unmarshal(body, &error)
-			if err != nil {
-				return body, err
-			}
-
-			// If the error wasn't about throttling and it is below 500, lets return it
-			// This retries server errors or AWS errors where we should retry
-			if error.Type != "Throttling" && resp.StatusCode <= 500 {
-				return body, error
-			}
-
-			// Point lastBody to body
+		shouldRetry, err := r.RetryPredicate(resp.StatusCode, body)
+		if shouldRetry {
 			lastBody = body
 
 			// Exponential backoff for the retry
 			sleepDuration := time.Duration(100 * math.Pow(2.0, float64(try)))
 			time.Sleep(sleepDuration * time.Millisecond)
+		} else {
+			return body, err
 		}
 	}
 	return lastBody, exceededRetriesError
