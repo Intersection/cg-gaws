@@ -90,6 +90,11 @@ func (s *Stream) Describe() (StreamDescription, error) {
 	if err != nil {
 		return StreamDescription{}, err
 	}
+
+	for i, _ := range result.StreamDescription.Shards {
+		result.StreamDescription.Shards[i].stream = s
+
+	}
 	return result.StreamDescription, err
 }
 

@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	//"github.com/controlgroup/gaws"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -120,6 +119,11 @@ func TestDescribeStream(t *testing.T) {
 			result := streamDescriptionResult{}
 			_ = json.Unmarshal(testStreamDescription, &result)
 			exampleDescription := result.StreamDescription
+
+			for i, _ := range exampleDescription.Shards {
+				exampleDescription.Shards[i].stream = &testStream
+			}
+
 			So(description, ShouldResemble, exampleDescription)
 		})
 		Convey("The second shards StartingHashKey will be the same as the example", func() {
