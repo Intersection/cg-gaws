@@ -2,6 +2,7 @@
 package gaws
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -29,32 +30,49 @@ func (e gawsError) Error() string {
 
 type retryPredicate func(int, []byte) (bool, error)
 
-// SendAWSRequest signs and sends an AWS request.
-// It will retry 500s and throttling errors with an exponential backoff.
-func SendAWSRequest(req *http.Request, retry retryPredicate) ([]byte, error) {
+// AWSRequest is a request to AWS. It is used instead of http.Request to facilitate retries.
+type AWSRequest struct {
+	RetryPredicate retryPredicate
+	URL            string
+	Method         string
+	Headers        map[string]string
+	Body           []byte
+}
+
+func (r *AWSRequest) getRequest() *http.Request {
+
+	payload := bytes.NewReader(r.Body)
+	req, _ := http.NewRequest(r.Method, r.URL, payload)
+
+	for k, v := range r.Headers {
+		req.Header.Set(k, v)
+	}
 
 	awsauth.Sign(req)
+	return req
+}
+
+// Do makes the request to AWS and retries with an exponential backoff.
+func (r *AWSRequest) Do() ([]byte, error) {
 	client := &http.Client{}
 	var lastBody []byte
 
 	for try := 1; try < MaxTries; try++ {
-
+		req := r.getRequest()
 		resp, err := client.Do(req)
-		defer resp.Body.Close()
 
 		if err != nil {
 			return make([]byte, 0), err
 		}
-
+		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 
 		if err != nil {
 			return body, err
 		}
 
-		shouldRetry, err := retry(resp.StatusCode, body)
+		shouldRetry, err := r.RetryPredicate(resp.StatusCode, body)
 		if shouldRetry {
-			// Point lastBody to body
 			lastBody = body
 
 			// Exponential backoff for the retry

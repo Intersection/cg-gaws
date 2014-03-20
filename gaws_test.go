@@ -57,14 +57,21 @@ func testAWSThrottle(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(b))
 }
 
+func canonicalRequest() AWSRequest {
+	r := AWSRequest{RetryPredicate: defaultRetryPredicate,
+		Method: "GET"}
+	return r
+}
+
 func TestSuccess(t *testing.T) {
 	Convey("Given a request sent to a server that always returns 200s", t, func() {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
 		defer ts.Close()
 
-		req, _ := http.NewRequest("GET", ts.URL, nil)
+		r := canonicalRequest()
+		r.URL = ts.URL
 
-		_, err := SendAWSRequest(req, defaultRetryPredicate)
+		_, err := r.Do()
 
 		Convey("SendAWSRequest will not return errors", func() {
 			So(err, ShouldBeNil)
@@ -79,9 +86,10 @@ func TestFailBadJson(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP404NonJson))
 		defer ts.Close()
 
-		req, _ := http.NewRequest("GET", ts.URL, nil)
+		r := canonicalRequest()
+		r.URL = ts.URL
 
-		_, err := SendAWSRequest(req, defaultRetryPredicate)
+		_, err := r.Do()
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
@@ -96,9 +104,10 @@ func TestFailNoRetry(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
 		defer ts.Close()
 
-		req, _ := http.NewRequest("GET", ts.URL, nil)
+		r := canonicalRequest()
+		r.URL = ts.URL
 
-		_, err := SendAWSRequest(req, defaultRetryPredicate)
+		_, err := r.Do()
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
@@ -117,9 +126,10 @@ func TestThrottleRetry(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(testAWSThrottle))
 		defer ts.Close()
 
-		req, _ := http.NewRequest("GET", ts.URL, nil)
+		r := canonicalRequest()
+		r.URL = ts.URL
 
-		_, err := SendAWSRequest(req, defaultRetryPredicate)
+		_, err := r.Do()
 
 		Convey("SendAWSRequest should return an error", func() {
 			So(err, ShouldNotBeNil)
