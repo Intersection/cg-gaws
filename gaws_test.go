@@ -59,7 +59,8 @@ func testAWSThrottle(w http.ResponseWriter, r *http.Request) {
 
 func canonicalRequest() AWSRequest {
 	r := AWSRequest{RetryPredicate: defaultRetryPredicate,
-		Method: "GET"}
+		Method:  "GET",
+		Headers: map[string]string{}}
 	return r
 }
 
@@ -139,5 +140,35 @@ func TestThrottleRetry(t *testing.T) {
 			So(err.Error(), ShouldEqual, exceededRetriesError.Error())
 		})
 
+	})
+}
+
+func TestGetRequest(t *testing.T) {
+
+	Convey("When I use GetRequest", t, func() {
+		r := canonicalRequest()
+		r.URL = "http://www.google.com"
+		r.Headers["foo"] = "bar"
+		req := r.getRequest()
+
+		Convey("It adds the headers", func() {
+			So(req.Header["Foo"], ShouldResemble, []string{"bar"})
+		})
+
+		Convey("It sets the right method", func() {
+			So(req.Method, ShouldEqual, "GET")
+		})
+	})
+}
+
+func TestBadRequest(t *testing.T) {
+
+	Convey("When I send a request to a nonexistent host", t, func() {
+		r := canonicalRequest()
+		r.URL = "this will not work"
+		_, err := r.Do()
+		Convey("I get an error", func() {
+			So(err, ShouldNotBeNil)
+		})
 	})
 }
