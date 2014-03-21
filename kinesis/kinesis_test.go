@@ -13,6 +13,10 @@ func testHTTP200(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+func testBadJson(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("{\"foo\":\"bar\""))
+}
+
 var notFoundError = kinesisError{Type: "NotFound", Message: "Could not find something"}
 
 func testHTTP404(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +94,17 @@ func TestListStreams(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 	})
+	Convey("Given a ListStreams request to a server that returns bad data", t, func() {
+		ts := httptest.NewServer(http.HandlerFunc(testBadJson))
+		ks := KinesisService{Endpoint: ts.URL}
+		resp, err := ks.ListStreams()
+		Convey("It should return an error", func() {
+			So(err, ShouldNotBeNil)
+		})
+		Convey("And the result should be empty", func() {
+			So(resp, ShouldResemble, []Stream{})
+		})
+	})
 }
 
 var testGetRecordsResult []byte = []byte(`{
@@ -161,6 +176,44 @@ func TestStreamRecords(t *testing.T) {
 		_, e := ks.StreamRecords("foo")
 		Convey("The error will be returned on the error channel", func() {
 			So(e, ShouldNotBeNil)
+		})
+	})
+}
+
+func TestRetryPredicate(t *testing.T) {
+
+	Convey("Given a response that is not JSON", t, func() {
+		result, err := kinesisRetryPredicate(400, []byte("bad data"))
+
+		Convey("RetryPredicate returns false", func() {
+			So(result, ShouldBeFalse)
+		})
+
+		Convey("Error is not nil",func() {
+			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("Given a response that has a status of 500", t, func() {
+		result, _ := kinesisRetryPredicate(500, []byte("{\"__type\": \"foo\",\"message\":\"bar\"}"))
+		Convey("RetryPredicate returns true", func() {
+			So(result, ShouldBeTrue)
+		})
+	})
+
+	Convey("Given a response that is a \"Throttling\" type", t, func() {
+
+		result, _ := kinesisRetryPredicate(400, []byte("{\"__type\": \"Throttling\",\"message\":\"bar\"}"))
+		Convey("RetryPredicate returns true", func() {
+			So(result, ShouldBeTrue)
+		})
+	})
+	
+	Convey("Given a response that is a \"ProvisionedThroughputExceededException\" type", t, func() {
+
+		result, _ := kinesisRetryPredicate(400, []byte("{\"__type\": \"ProvisionedThroughputExceededException\",\"message\":\"bar\"}"))
+		Convey("RetryPredicate returns true", func() {
+			So(result, ShouldBeTrue)
 		})
 	})
 }
