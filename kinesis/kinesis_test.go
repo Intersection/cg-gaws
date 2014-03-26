@@ -125,11 +125,11 @@ func testGetRecordsSuccess(w http.ResponseWriter, r *http.Request) {
 
 func TestGetRecords(t *testing.T) {
 
-	Convey("When calling GetRecords on a stream that returns records", t, func() {
+	Convey("When calling getRecords on a stream that returns records", t, func() {
 		ts := httptest.NewServer(http.HandlerFunc(testGetRecordsSuccess))
 		ks := KinesisService{Endpoint: ts.URL}
 
-		records, nextIterator, err := ks.GetRecords("foo", 0)
+		records, nextIterator, err := ks.getRecords("foo", 0)
 
 		Convey("It should not return an error", func() {
 			So(err, ShouldBeNil)
@@ -144,16 +144,16 @@ func TestGetRecords(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP404))
 		ks := KinesisService{Endpoint: ts.URL}
 
-		_, _, err := ks.GetRecords("foo", 0)
+		_, _, err := ks.getRecords("foo", 0)
 		Convey("The result will return an error", func() {
 			So(err, ShouldNotBeNil)
 		})
 	})
-	Convey("When calling GetRecords on a stream that returns an error", t, func() {
+	Convey("When calling getRecords on a stream that returns an error", t, func() {
 		ts := httptest.NewServer(http.HandlerFunc(testHTTP200))
 		ks := KinesisService{Endpoint: ts.URL}
 
-		_, _, err := ks.GetRecords("foo", 0)
+		_, _, err := ks.getRecords("foo", 0)
 		Convey("It should return an error", func() {
 			So(err, ShouldNotBeNil)
 		})
@@ -189,7 +189,7 @@ func TestRetryPredicate(t *testing.T) {
 			So(result, ShouldBeFalse)
 		})
 
-		Convey("Error is not nil",func() {
+		Convey("Error is not nil", func() {
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -208,7 +208,7 @@ func TestRetryPredicate(t *testing.T) {
 			So(result, ShouldBeTrue)
 		})
 	})
-	
+
 	Convey("Given a response that is a \"ProvisionedThroughputExceededException\" type", t, func() {
 
 		result, _ := kinesisRetryPredicate(400, []byte("{\"__type\": \"ProvisionedThroughputExceededException\",\"message\":\"bar\"}"))

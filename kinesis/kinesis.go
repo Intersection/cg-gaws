@@ -139,28 +139,28 @@ func (s *KinesisService) ListStreams() ([]Stream, error) {
 	return streams, nil
 }
 
-// getRecordsRequest is used with GetRecords to request records from a stream. Limit is optional.
+// getRecordsRequest is used with getRecords to request records from a stream. Limit is optional.
 type getRecordsRequest struct {
 	Limit         int    `json:",omitempty"` // Optional number of records to return.
 	ShardIterator string // The shard iterator to use.
 }
 
-// Record is a Kinesis record returned in a GetRecordsResponse.
+// Record is a Kinesis record returned in a getRecordsResponse.
 type Record struct {
 	Data           string // The data blob. It is Base64 encoded.
 	PartitionKey   string // Identifies which shard in the stream the data record is assigned to.
 	SequenceNumber string // The unique identifier for the record in the Amazon Kinesis stream.
 }
 
-// getRecordsResponse is returned by GetRecords.
+// getRecordsResponse is returned by getRecords.
 type getRecordsResponse struct {
 	NextShardIterator string   // The next position in the shard from which to start sequentially reading data records.
 	Records           []Record // A slice of Record structs
 }
 
-// GetRecords returns one or more data records from a stream. limit can be an integer up to 10,000. If it is 0, this will use the default limit.
+// getRecords returns one or more data records from a stream. limit can be an integer up to 10,000. If it is 0, this will use the default limit.
 // See http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html for more details.
-func (s *KinesisService) GetRecords(shardIterator string, limit int) ([]Record, string, error) {
+func (s *KinesisService) getRecords(shardIterator string, limit int) ([]Record, string, error) {
 	request := getRecordsRequest{ShardIterator: shardIterator, Limit: limit}
 	result := getRecordsResponse{}
 
@@ -184,13 +184,13 @@ func (s *KinesisService) GetRecords(shardIterator string, limit int) ([]Record, 
 
 // BUG(drocamor): StreamRecords is a terrible name.
 
-// StreamRecords creates a goroutine and uses GetRecords to send records over a channel. If it encounters an error, it will send the error over the error channel and exit the goroutine.
+// StreamRecords creates a goroutine and uses getRecords to send records over a channel. If it encounters an error, it will send the error over the error channel and exit the goroutine.
 func (s *KinesisService) StreamRecords(shardIterator string) (<-chan Record, <-chan error) {
 	c := make(chan Record)
 	errc := make(chan error)
 	go func() {
 		for {
-			records, newiterator, err := s.GetRecords(shardIterator, 0)
+			records, newiterator, err := s.getRecords(shardIterator, 0)
 
 			if err != nil {
 				errc <- err

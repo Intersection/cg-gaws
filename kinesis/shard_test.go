@@ -41,7 +41,7 @@ func TestGetShardIterator(t *testing.T) {
 
 		testShard := Shard{ShardId: "TestShard", stream: &testStream}
 		resp, err := testShard.GetShardIterator("LATEST", "12345")
-		
+
 		Convey("It should return an error", func() {
 			So(err, ShouldNotBeNil)
 		})
@@ -56,7 +56,7 @@ func TestGetShardIterator(t *testing.T) {
 
 		testShard := Shard{ShardId: "TestShard", stream: &testStream}
 		resp, err := testShard.GetShardIterator("LATEST", "12345")
-		
+
 		Convey("It should return an error", func() {
 			So(err, ShouldNotBeNil)
 		})
