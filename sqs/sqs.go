@@ -9,16 +9,16 @@ import (
 )
 
 type SimpleQueueService struct {
-        Endpoint string //The docs say http://sqs.us-east-1.amazonaws.com
+    Endpoint string //The docs say http://sqs.us-east-1.amazonaws.com
 }
 
 // message is a SQS message. These are put onto or received from a defined Queue.
 type message struct {
-	Attribute     []Attribute  //String to string map 
-	Body          string  // String of message contents - not url-encoded
-	MD5OfBody     string  //MD5 digest of the non-url-encoded message body string
-  MessageId     string  // unique identifier for the message - considered unique across all AWS accounts for a period of time
-  ReceiptHandle string  // identifier associated with the act of receiving the message - new handle returned everytime receive a message
+	  Attribute     []Attribute  //String to string map 
+	  Body          string  // String of message contents - not url-encoded
+	  MD5OfBody     string  //MD5 digest of the non-url-encoded message body string
+    MessageId     string  // unique identifier for the message - considered unique across all AWS accounts for a period of time
+    ReceiptHandle string  // identifier associated with the act of receiving the message - new handle returned everytime receive a message
 }
 
 type Attribute struct {
