@@ -23,6 +23,32 @@ type message struct {
 
 type Attribute struct {
     Name  string `xml:"ReceiveMessageResult>Message>Attribute>Name"` //name if the attribute - ex. Policy, ApproximateNumberOfMessages, LastModifiedTimestamp
-    Value string `xml:ReceiveMessageResult>Message>Attribute>Value"` //the value of the attribute
+    Value string `xml:"ReceiveMessageResult>Message>Attribute>Value"` //the value of the attribute
 }
 
+type CreateQueueResponse struct {
+    QueueUrl  string `xml:"CreateQueueResult>QueueUrl"`
+}
+
+type GetQueueAttributesResponse struct {
+    Attribute []Attribute 
+}
+
+type DeleteMessageResponse struct {
+    RequestId string `xml:"ResponseMetaData>RequestId"`
+}
+
+type GetQueueUrlResponse struct { 
+    QueueUrl  string  `xml:"GetQueueUrlResult>QueueUrl"`
+    RequestId string  `xml:"ResponseMetaData>RequestId"`
+}
+
+type ListQueueResponse struct {
+    QueueUrl  string `xml:"ListQueuesResult>QueueUrl"`
+    RequestId string  `xml:"ResponseMetaData>RequestId"`
+}
+
+type ReceiveMessageResponse struct {
+    Messages []Messages `xml:"ReceiveMessageResult>Message"`
+    RequestId string  `xml:"ResponseMetaData>RequestId"`
+}
