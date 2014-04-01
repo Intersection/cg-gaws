@@ -13,12 +13,12 @@ type SimpleQueueService struct {
 }
 
 // message is a SQS message. These are put onto or received from a defined Queue.
-type message struct {
+type Message struct {
 	  Attribute     []Attribute  //String to string map 
-	  Body          string  // String of message contents - not url-encoded
-	  MD5OfBody     string  //MD5 digest of the non-url-encoded message body string
-    MessageId     string  // unique identifier for the message - considered unique across all AWS accounts for a period of time
-    ReceiptHandle string  // identifier associated with the act of receiving the message - new handle returned everytime receive a message
+	  Body          string `xml:"ReceiveMessageResult>Message>Body"` // String of message contents - not url-encoded
+	  MD5OfBody     string `xml:"ReceiveMessageResult>Message>MD5OfBody"` //MD5 digest of the non-url-encoded message body string
+    MessageId     string `xml:"ReceiveMessageResult>Message>MessageId"` // unique identifier for the message - considered unique across all AWS accounts for a period of time
+    ReceiptHandle string `xml:"ReceiveMessageResult>Message>ReceiptHandle"` // identifier associated with the act of receiving the message - new handle returned everytime receive a message
 }
 
 type Attribute struct {
