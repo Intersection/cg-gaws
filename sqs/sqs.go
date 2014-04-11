@@ -4,12 +4,13 @@ package sqs
 import (
 	"encoding/xml"
 	"fmt"
+  "net/url"
 
 	"github.com/controlgroup/gaws"
 )
 
 type SimpleQueueService struct {
-    Endpoint string //The docs say http://sqs.us-east-1.amazonaws.com
+    Endpoint string //The docs say http://sqs.us-west-2.amazonaws.com
 }
 
 // message is a SQS message. These are put onto or received from a defined Queue.
@@ -26,6 +27,51 @@ type Attribute struct {
     Value string `xml:"ReceiveMessageResult>Message>Attribute>Value"` //the value of the attribute
 }
 
+//Building the MessageRequests
+type MessageRequest struct {
+    queueUrl *Queue
+    Action  string
+    Messagebody string
+    Version string
+    SignatureMethod string
+    Expires string
+    AWSAccessKey string //how do we take this out and use tokens instead for the URL? Is the AccessKey even required?
+    SignatureVersion  string
+    Signature
+}
+
+//Not sure this is correct - the QueueUrl should be exactly what was sent back from AWS - not created
+type Queue struct {
+    Queueurl string
+}
+
+//Building the QueueRequests
+type QueueRequest struct {
+    service *SimpleQueueService
+    Action  string
+    Messagebody string
+    Version string
+    SignatureMethod string
+    Expires string
+    AWSAccessKey string //how do we take this out and use tokens instead for the URL? Is the AccessKey even required?
+    SignatureVersion  string
+    Signature string
+}
+    
+
+//builds the request for SQS - but Messge reuests look different from Queue requests
+// 
+//The below is a createQueueRequest
+func (q *QueueRequest) createQueueRequest(queueName string, attribute map[string]) gaws.AWSRequest {
+    resp = &CreateQueueResponse{}
+    i := 1
+    for n, v := range attribute {
+       //Assign the name and value for each passed in attribute for Attribute.i.Name, Attribute.i.Value 
+    
+  return r
+}
+
+//Store the QueueUrl as it is returned from CreateQueueReponse as the components can change 
 type CreateQueueResponse struct {
     QueueUrl  string `xml:"CreateQueueResult>QueueUrl"`
 }
@@ -51,4 +97,19 @@ type ListQueueResponse struct {
 type ReceiveMessageResponse struct {
     Messages []Messages `xml:"ReceiveMessageResult>Message"`
     RequestId string  `xml:"ResponseMetaData>RequestId"`
+}
+
+type SendMessageResponse struct {
+    MD5OfMessageBody string `xml:"SendMessageResult>MD5OfMessageBody"`
+    MessageId string `xml:"SendMessageResult>MessageId"`
+    RequestId string `xml:"ResponseMetaData>RequestId"`
+}     
+
+func (sqs *SimpleQueueService) CreateQueue(name string) (q *Queue, err error) {
+    create, err := sqs.CreateQueue(name)
+    if err != nil {
+      return nil, err
+    }
+    q := &Queue{sqs, create.QueueUrl}
+    return q
 }
